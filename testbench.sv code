@@ -1,0 +1,54 @@
+`timescale 1ns/1ps
+
+module uart_tb;
+
+parameter CLKS_PER_BIT = 87;
+
+reg clk;
+reg rst;
+reg tx_start;
+reg [7:0] tx_data;
+wire [7:0] rx_data;
+wire rx_done;
+
+uart_top #(CLKS_PER_BIT) DUT (
+    .clk(clk),
+    .rst(rst),
+    .tx_start(tx_start),
+    .tx_data(tx_data),
+    .rx_data(rx_data),
+    .rx_done(rx_done)
+);
+
+always #10 clk = ~clk;   // 50 MHz clock
+
+initial begin
+    clk = 0;
+    rst = 1;
+    tx_start = 0;
+    tx_data = 0;
+
+    // VCD dump
+    $dumpfile("dump.vcd");
+    $dumpvars(0, uart_tb);
+
+    $display("Starting UART Simulation...");
+
+    #100 rst = 0;
+
+    #50;
+    tx_data = 8'hA5;
+    tx_start = 1;
+    #20;
+    tx_start = 0;
+
+    wait(rx_done);
+
+    if (rx_data == 8'hA5)
+        $display("TEST PASSED: Received = %h", rx_data);
+    else
+        $display("TEST FAILED: Received = %h", rx_data);
+
+    #200;
+    $finish;
+end
